@@ -1,0 +1,1 @@
+export function uploadFile(req, res) { if (!req.file) return res.status(400).json({ status: 'error', message: 'Archivo ausente o tipo no permitido', data: null }); res.status(201).json({ status: 'success', message: 'Archivo subido correctamente', data: { filename: req.file.filename, path: `/uploads/${req.file.filename}`, size: req.file.size, mimetype: req.file.mimetype } }); }

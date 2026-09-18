@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as controller from '../controllers/product.controller.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
+const router = Router();
+router.get('/', controller.list);
+router.get('/:id', controller.getOne);
+router.post('/', authenticateToken, controller.create);
+router.put('/:id', authenticateToken, controller.update);
+router.delete('/:id', authenticateToken, controller.remove);
+export default router;

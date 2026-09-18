@@ -1,0 +1,5 @@
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+export async function registerUser({ name, email, password }) { if (!name || !email || !password || password.length < 8) throw Object.assign(new Error('Nombre, email y contraseña de al menos 8 caracteres son obligatorios'), { status: 400 }); const exists = await User.findOne({ where: { email } }); if (exists) throw Object.assign(new Error('El email ya está registrado'), { status: 409 }); const user = await User.create({ name, email, password: await bcrypt.hash(password, 12) }); return { id: user.id, name: user.name, email: user.email }; }
+export async function loginUser({ email, password }) { const user = await User.findOne({ where: { email } }); if (!user || !(await bcrypt.compare(password || '', user.password))) throw Object.assign(new Error('Credenciales inválidas'), { status: 401 }); const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }); return { token, user: { id: user.id, name: user.name, email: user.email } }; }
