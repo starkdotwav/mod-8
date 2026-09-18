@@ -1,50 +1,114 @@
 # Proyecto Módulo 8 — Node & Express Web App
 
-API RESTful para gestión de usuarios y productos, con autenticación JWT, Sequelize/PostgreSQL y subida de archivos.
+API RESTful para gestión de usuarios y productos, con PostgreSQL, Sequelize, JWT y subida de archivos.
 
-## 1. Requisitos
+## Requisitos
 
 - Node.js 18 o superior.
-- PostgreSQL 14 o superior.
-- npm.
+- PostgreSQL instalado y ejecutándose.
+- Git y npm.
 
-## 2. Instalación
+## Instalación
 
 ```bash
+git clone https://github.com/starkdotwav/mod-8.git
+cd mod-8
 npm install
-cp .env.example .env
-npm run dev
 ```
 
-La API quedará disponible en `http://localhost:3000`.
+Crea el archivo local de variables de entorno:
 
-## 3. Variables de entorno
+```bash
+cp .env.example .env
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+No subas `.env` a GitHub. Este archivo contiene datos privados y está excluido mediante `.gitignore`.
+
+## Base de datos
+
+Crea una base de datos PostgreSQL:
+
+```sql
+CREATE DATABASE mod8_db;
+```
+
+Luego edita `.env`:
 
 ```env
 PORT=3000
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/mod8_db
-JWT_SECRET=cambia_esta_clave_por_una_segura
+DATABASE_URL=postgres://postgres:TU_CLAVE@localhost:5432/mod8_db
+JWT_SECRET=una_clave_segura_para_desarrollo
 JWT_EXPIRES_IN=1h
 MAX_FILE_SIZE=5242880
 ```
 
-## 4. Endpoints
+Ajusta el usuario, contraseña, host y puerto según tu instalación.
+
+## Ejecución
+
+Modo desarrollo:
+
+```bash
+npm run dev
+```
+
+Modo producción:
+
+```bash
+npm start
+```
+
+La aplicación estará disponible en `http://localhost:3000`.
+
+## Comprobación de estado
+
+Abre en el navegador o prueba con curl:
+
+```text
+http://localhost:3000/health
+```
+
+```bash
+curl http://localhost:3000/health
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "success",
+  "message": "API funcionando",
+  "data": {
+    "uptime": 10.123
+  }
+}
+```
+
+Si la ruta no responde, verifica que `npm run dev` esté activo y que PostgreSQL esté funcionando.
+
+## Endpoints
 
 | Método | Ruta | Descripción | Seguridad |
 |---|---|---|---|
+| GET | `/health` | Estado de la API | Pública |
 | POST | `/api/auth/register` | Registrar usuario | Pública |
 | POST | `/api/auth/login` | Obtener token JWT | Pública |
-| GET | `/api/products` | Listar y filtrar productos | Pública |
+| GET | `/api/products` | Listar productos | Pública |
 | GET | `/api/products/:id` | Obtener producto | Pública |
 | POST | `/api/products` | Crear producto | JWT |
 | PUT | `/api/products/:id` | Actualizar producto | JWT |
 | DELETE | `/api/products/:id` | Eliminar producto | JWT |
 | POST | `/api/upload` | Subir imagen | JWT |
-| GET | `/health` | Verificar estado del servidor | Pública |
 
-## 5. Autenticación
+## Autenticación
 
-Primero registra un usuario:
+Registra un usuario:
 
 ```http
 POST /api/auth/register
@@ -57,7 +121,7 @@ Content-Type: application/json
 }
 ```
 
-Después inicia sesión:
+Inicia sesión:
 
 ```http
 POST /api/auth/login
@@ -69,43 +133,30 @@ Content-Type: application/json
 }
 ```
 
-Envía el token recibido en las rutas privadas:
+Usa el token recibido en las rutas privadas:
 
 ```http
 Authorization: Bearer TU_TOKEN_JWT
 ```
 
-## 6. Subida de archivos
+## Subida de archivos
 
-Utiliza `multipart/form-data` en:
+Usa `multipart/form-data` en `POST /api/upload`, con un campo llamado `file`. Se aceptan imágenes JPG, JPEG, PNG, GIF y WEBP de hasta 5 MB.
 
-```http
-POST /api/upload
-```
+## Pruebas de entrega
 
-El nombre del campo debe ser `file`. Se aceptan imágenes JPG, JPEG, PNG, GIF y WEBP, con un tamaño máximo de 5 MB.
+En Postman realiza capturas de:
 
-## 7. Respuesta estándar
+1. `GET /health`.
+2. Registro exitoso.
+3. Login exitoso y token JWT.
+4. Ruta privada sin token, con error `401`.
+5. Creación de producto con token.
+6. Actualización y eliminación de producto.
+7. Subida de imagen.
+8. Error por archivo inválido o demasiado grande.
 
-```json
-{
-  "status": "success",
-  "message": "Operación realizada correctamente",
-  "data": {}
-}
-```
-
-Los errores utilizan el mismo formato:
-
-```json
-{
-  "status": "error",
-  "message": "Token no proporcionado",
-  "data": null
-}
-```
-
-## 8. Arquitectura
+## Arquitectura
 
 ```text
 src/
@@ -115,49 +166,19 @@ src/
 ├── models/
 ├── routes/
 ├── services/
-├── utils/
 ├── app.js
 └── server.js
 uploads/
 logs/
-.env.example
-package.json
 ```
 
-Las rutas reciben las solicitudes, los controladores coordinan la operación, los servicios concentran la lógica de negocio y los modelos gestionan la persistencia mediante Sequelize. Esta separación mejora el mantenimiento y permite escalar la aplicación.
+Las rutas reciben solicitudes, los controladores coordinan la respuesta, los servicios concentran la lógica y los modelos gestionan la persistencia.
 
-## 9. Validaciones y seguridad
+## Seguridad
 
-- Contraseñas almacenadas con `bcrypt`.
-- Tokens firmados y con expiración mediante JWT.
+- Contraseñas protegidas con bcrypt.
+- Tokens JWT con expiración.
 - Rutas de escritura protegidas.
-- Validación de correo, contraseña y campos obligatorios.
-- Validación de existencia de productos.
-- Validación de extensión, MIME y tamaño de archivos.
-- Variables sensibles almacenadas en `.env`.
-- `.env` excluido mediante `.gitignore`.
-- Middleware centralizado para errores.
-- Registro de eventos en `logs/app.log`.
-
-## 10. Pruebas sugeridas en Postman
-
-1. `GET /health`.
-2. `POST /api/auth/register`.
-3. `POST /api/auth/login`.
-4. `GET /api/products`.
-5. `POST /api/products` sin token: debe devolver `401`.
-6. `POST /api/products` con token: debe devolver `201`.
-7. `PUT /api/products/:id` con token.
-8. `DELETE /api/products/:id` con token.
-9. `POST /api/upload` con una imagen válida.
-10. Repetir una ruta privada con token vencido o inválido.
-
-## 11. Reflexión
-
-El módulo 6 permitió construir el servidor, organizar rutas y servir contenido. El módulo 7 incorporó la base de datos, los modelos, las relaciones y las operaciones CRUD. Finalmente, el módulo 8 transformó la aplicación en una API RESTful consumible por clientes externos, incorporando autenticación JWT, middleware de seguridad, validaciones y subida de archivos.
-
-La separación entre rutas, controladores, servicios y middlewares evita concentrar toda la lógica en un único archivo. Se protegieron las operaciones de creación, modificación, eliminación y carga de archivos porque pueden alterar información persistida o consumir recursos del servidor.
-
-## 12. Licencia
-
-Proyecto académico desarrollado para la evaluación de los módulos 6, 7 y 8.
+- Validación de archivos por tipo y tamaño.
+- Variables privadas fuera del repositorio.
+- Manejo centralizado de errores.
